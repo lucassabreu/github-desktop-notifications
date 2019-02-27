@@ -2,13 +2,19 @@ package daemon
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"time"
+
+	"github.com/lucassabreu/github-desktop-notifications/notify"
 
 	"github.com/google/go-github/github"
 	"github.com/lucassabreu/github-desktop-notifications/githubclient"
 )
+
+type comment struct {
+	Body    string `json:"body"`
+	HTMLURL string `json:"html_url"`
+}
 
 func lookForNotifications(token string, log *log.Logger, errorc chan error) {
 	stdlog.Println("Looking for notifications")
@@ -35,22 +41,9 @@ func lookForNotifications(token string, log *log.Logger, errorc chan error) {
 			return
 		}
 
-		log.Println(fmt.Sprintf("Ping..."))
+		log.Println("Ping...")
 		for _, n := range ns {
-
-			req, err = client.NewRequest("GET", n.GetSubject().GetLatestCommentURL(), nil)
-			if err != nil {
-				errorc <- err
-				return
-			}
-
-			var o map[string]interface{}
-			_, err := client.Do(c, req, &o)
-			if err != nil {
-				errorc <- err
-				return
-			}
-			log.Println(fmt.Sprintf("%s - %s", o["body"], o["html_url"]))
+			go processNotification(n, client, errorc)
 		}
 
 		if r.StatusCode != 304 {
@@ -71,4 +64,25 @@ func lookForNotifications(token string, log *log.Logger, errorc chan error) {
 		}
 		time.Sleep(d)
 	}
+}
+
+func processNotification(n *github.Notification, client *github.Client, errorc chan error) {
+	req, err := client.NewRequest("GET", n.GetSubject().GetLatestCommentURL(), nil)
+	if err != nil {
+		errorc <- err
+		return
+	}
+
+	var o comment
+
+	if _, err = client.Do(context.Background(), req, &o); err != nil {
+		errorc <- err
+		return
+	}
+
+	notify.Notify(
+		n.GetReason(),
+		o.Body,
+		o.HTMLURL,
+	)
 }
