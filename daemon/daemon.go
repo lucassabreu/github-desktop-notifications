@@ -1,7 +1,11 @@
 package daemon
 
 import (
+	"errors"
 	"log"
+	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/takama/daemon"
 )
@@ -49,6 +53,31 @@ func (service *Service) Stop() (string, error) {
 // Status - check the service status
 func (service *Service) Status() (string, error) {
 	return service.daemon.Status()
+}
+
+// Manage by daemon commands or run the daemon
+func (service *Service) Manage(token string) error {
+
+	stdlog = log.New(os.Stdout, "", log.Ldate|log.Ltime)
+	errlog = log.New(os.Stderr, "", log.Ldate|log.Ltime)
+
+	interrupt := make(chan os.Signal, 1)
+	signal.Notify(interrupt, os.Interrupt, os.Kill, syscall.SIGTERM)
+
+	errorc := make(chan error, 1)
+	go lookForNotifications(token, stdlog, errorc)
+
+	select {
+	case err := <-errorc:
+		return err
+	case killSignal := <-interrupt:
+
+		stdlog.Println("Got signal:", killSignal)
+		if killSignal == os.Interrupt {
+			return errors.New("Daemon was interruped by system signal")
+		}
+		return errors.New("Daemon was killed")
+	}
 }
 
 // New creates a new Service to interact
