@@ -16,7 +16,9 @@ package cmd
 
 import (
 	"fmt"
+	"os"
 
+	"github.com/lucassabreu/github-desktop-notifications/daemon"
 	"github.com/spf13/cobra"
 )
 
@@ -24,9 +26,15 @@ import (
 var startCmd = &cobra.Command{
 	Use:   "start",
 	Short: "Start the daemon service",
-	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("start called")
-	},
+	Run: withService(func(cmd *cobra.Command, args []string, srv *daemon.Service) {
+		status, err := srv.Start()
+		if err != nil {
+			fmt.Println("Error: ", err)
+			os.Exit(1)
+		}
+
+		fmt.Println(status)
+	}),
 }
 
 func init() {

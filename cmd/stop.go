@@ -16,7 +16,9 @@ package cmd
 
 import (
 	"fmt"
+	"os"
 
+	"github.com/lucassabreu/github-desktop-notifications/daemon"
 	"github.com/spf13/cobra"
 )
 
@@ -24,9 +26,15 @@ import (
 var stopCmd = &cobra.Command{
 	Use:   "stop",
 	Short: "Stops all notifications",
-	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("stop called")
-	},
+	Run: withService(func(cmd *cobra.Command, args []string, srv *daemon.Service) {
+		status, err := srv.Stop()
+		if err != nil {
+			fmt.Println("Error: ", err)
+			os.Exit(1)
+		}
+
+		fmt.Println(status)
+	}),
 }
 
 func init() {

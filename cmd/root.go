@@ -18,6 +18,8 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/lucassabreu/github-desktop-notifications/daemon"
+
 	homedir "github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -31,7 +33,7 @@ var port int
 var rootCmd = &cobra.Command{
 	Use:   "github-desktop-notifications",
 	Short: "Show GitHub Notifications as Desktop Notifications",
-	Long:  `Integrates with GitHub Notifications API to provide Desktop Notifications`,
+	Long:  daemon.Description,
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.
@@ -48,7 +50,6 @@ func init() {
 
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.github-desktop-notifications.yaml)")
 	rootCmd.PersistentFlags().StringVarP(&token, "token", "t", "", "GitHub Token (needs repo and notifications permission)")
-	rootCmd.PersistentFlags().IntVarP(&port, "port", "p", 9977, "Port to be used by de daemon")
 }
 
 // initConfig reads in config file and ENV variables if set.
@@ -70,4 +71,16 @@ func initConfig() {
 	}
 
 	viper.AutomaticEnv() // read in environment variables that match
+}
+
+func withService(fn func(*cobra.Command, []string, *daemon.Service)) func(*cobra.Command, []string) {
+	return func(cmd *cobra.Command, args []string) {
+		s, err := daemon.New()
+		if err != nil {
+			fmt.Println("Error: ", err)
+			os.Exit(1)
+		}
+
+		fn(cmd, args, s)
+	}
 }
