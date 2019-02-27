@@ -2,6 +2,8 @@ module github.com/lucassabreu/github-desktop-notifications
 
 require (
 	github.com/BurntSushi/toml v0.3.1 // indirect
+	github.com/gen2brain/beeep v0.0.0-20190226134152-2cb437b15ebe
+	github.com/godbus/dbus v4.1.0+incompatible // indirect
 	github.com/google/go-github v17.0.0+incompatible
 	github.com/google/go-querystring v1.0.0 // indirect
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
